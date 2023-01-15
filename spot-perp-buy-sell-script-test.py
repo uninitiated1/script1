@@ -1,8 +1,34 @@
 from hummingbot.client.config.global_config_map import global_config_map
 from hummingbot.client.config.config_helpers import get_strategy_config_map, get_strategy_config_value
 from hummingbot.strategy.market_making.market_making_strategy import MarketMakingStrategy
+from hummingbot.strategy.spot_perpetual_arbitrage.spot_perpetual_arbitrage import SpotPerpetualArbitrageStrategy
+from hummingbot.core.event.event_logger import EventLogger
+from hummingbot.core.event.events import (
+    TradeType,
+    OrderType,
+)
 from typing import List
 import time
+
+event_logger = EventLogger()
+dynamic_bollinger_strategy = DynamicBollingerDirectionMarketMakingStrategy(trading_pair, spot_order_types, perp_order_types, target_positions, perp_percentage, leverage_amount, event_logger)
+
+try:
+    while True:
+        time.sleep(1)
+except (KeyboardInterrupt, Exception) as e:
+   dynamic_bollinger_strategy.logger().warning(f"{e}")
+   dynamic_bollinger_strategy.stop()
+   dynamic_bollinger_strategy.disconnect()
+
+dynamic_bollinger_strategy.connect()
+dynamic_bollinger_strategy.start()
+
+dynamic_bollinger_strategy = DynamicBollingerDirectionMarketMakingStrategy(trading_pair, spot_order_types, perp_order_types, target_positions, perp_percentage, leverage_amount)
+dynamic_bollinger_strategy.connect()
+dynamic_bollinger_strategy.start()
+
+
 
 # Define the trading pair and the order types
 trading_pair = "BTCUSDT"
@@ -21,6 +47,12 @@ leverage_amount = 3
 # Define the time interval for Bollinger bands
 time_interval = "1m"
 
+class CustomSpotPerpetualArbitrageStrategy(SpotPerpetualArbitrageStrategy):
+    def __init__(self, config: dict):
+        super().__init__(config)
+        # Add any custom variables here
+
+
 class DynamicBollingerDirectionMarketMakingStrategy(MarketMakingStrategy):
     def __init__(self, trading_pair: str, spot_order_types: List[str], perp_order_types: List[str], target_positions: List[float], perp_percentage: float, leverage_amount: int):
         self._trading_pair = trading_pair
@@ -38,6 +70,15 @@ class DynamicBollingerDirectionMarketMakingStrategy(MarketMakingStrategy):
         self._upper_band = None
         self._lower_band = None
         super().__init__()
+
+class CustomSpotPerpetualArbitrageStrategy(SpotPerpetualArbitrageStrategy):
+    def __init__(self, config: dict):
+        super().__init__(config)
+        # Add any custom variables here
+
+    def on_tick(self):
+        super().on_tick()
+        # Add any custom logic here
 
     async def on_tick(self):
         self._current_price = await self.data_source.quote_currency_price()
@@ -110,3 +151,15 @@ dynamic_bollinger_strategy.wait()
 
 Disconnect the strategy from the exchange
 dynamic_bollinger_strategy.disconnect()
+
+try:
+    while True:
+        time.sleep(1)
+except (KeyboardInterrupt, Exception) as e:
+    dynamic_bollinger_strategy.logger().warning(f"{e}")
+    dynamic_bollinger_strategy.stop()
+    dynamic_bollinger_strategy.disconnect()
+
+dynamic_bollinger_strategy = DynamicBollingerDirectionMarketMakingStrategy(trading_pair, spot_order_types, perp_order_types, target_positions, perp_percentage, leverage_amount)
+app = Application(strategy=dynamic_bollinger_strategy)
+app.start()
